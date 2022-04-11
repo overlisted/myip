@@ -81,6 +81,8 @@ int run(char *name, char *port, int version) {
       return 1;
     }
 
+    memset(buf, '\0', INET6_ADDRSTRLEN + 1);
+
     if (version == 1) {
       struct sockaddr_in v4_addr = *(struct sockaddr_in *)&peer_addr;
 
