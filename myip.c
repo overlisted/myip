@@ -66,6 +66,14 @@ int run(char *name, char *port, int version) {
     struct sockaddr peer_addr;
     socklen_t peer_addr_len;
 
+    if(version == 1) {
+      peer_addr_len = sizeof(struct sockaddr_in);
+    }
+
+    if(version == 2) {
+      peer_addr_len = sizeof(struct sockaddr_in6);
+    }
+
     peer_fd = accept(sock_fd, &peer_addr, &peer_addr_len);
 
     if (peer_fd == -1) {
