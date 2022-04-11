@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,6 +47,9 @@ int run(char *name, char *port, int version) {
     setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
                sizeof(reuseaddr));
 
+    int v6only = 1;
+    setsockopt(sock_fd, SOL_IPV6, IPV6_V6ONLY, &v6only, sizeof(v6only));
+
     bind_result =
         bind(sock_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
   }
@@ -60,18 +64,21 @@ int run(char *name, char *port, int version) {
 
   printf("%s listening\n", name);
   while (1) {
-    char buf[INET6_ADDRSTRLEN + 1];
+    char buf[256];
     int peer_fd;
     struct sockaddr peer_addr;
     socklen_t peer_addr_len;
 
-    if(version == 1) {
+    if (version == 1) {
       peer_addr_len = sizeof(struct sockaddr_in);
     }
 
-    if(version == 2) {
+    if (version == 2) {
       peer_addr_len = sizeof(struct sockaddr_in6);
     }
+
+    memset(buf, '\0', sizeof(buf));
+    memset(&peer_addr, '\0', peer_addr_len);
 
     peer_fd = accept(sock_fd, &peer_addr, &peer_addr_len);
 
@@ -81,18 +88,14 @@ int run(char *name, char *port, int version) {
       return 1;
     }
 
-    memset(buf, '\0', INET6_ADDRSTRLEN + 1);
-
-    if (version == 1) {
-      struct sockaddr_in v4_addr = *(struct sockaddr_in *)&peer_addr;
-
-      inet_ntop(AF_INET, &v4_addr.sin_addr, buf, peer_addr_len);
+    if(version == 1) {
+      struct sockaddr_in *addr_in = (struct sockaddr_in *)&peer_addr;
+      inet_ntop(AF_INET, &addr_in->sin_addr, buf, peer_addr_len);
     }
 
-    if (version == 2) {
-      struct sockaddr_in6 v6_addr = *(struct sockaddr_in6 *)&peer_addr;
-
-      inet_ntop(AF_INET6, &v6_addr.sin6_addr, buf, peer_addr_len);
+    if(version == 2) {
+      struct sockaddr_in6 *addr_in = (struct sockaddr_in6 *)&peer_addr;
+      inet_ntop(AF_INET6, &addr_in->sin6_addr, buf, peer_addr_len);
     }
 
     unsigned long len = strlen(buf);
@@ -109,14 +112,21 @@ int run(char *name, char *port, int version) {
 int main(int argc, char **argv) {
   signal(SIGINT, sigint_handler);
 
-  if (argc != 3) {
-    puts("usage: myip <v4 port> <v6 port>");
+  switch (argc) {
+  case 2:
+    if (fork() != 0) {
+      return run("v4", argv[1], 1);
+    } else {
+      return run("v6", argv[1], 2);
+    }
+  case 3:
+    if (fork() != 0) {
+      return run("v4", argv[1], 1);
+    } else {
+      return run("v6", argv[2], 2);
+    }
+  default:
+    puts("usage: \tmyip <combined port>\n\tmyip <v4 port> <v6 port>");
     return 1;
-  }
-
-  if (fork() != 0) {
-    return run("v4", argv[1], 1);
-  } else {
-    return run("v6", argv[2], 2);
   }
 }
