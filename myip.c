@@ -91,7 +91,7 @@ int run(char *name, char *port, int version) {
 
     if (version == 1) {
       struct sockaddr_in *addr_in = (struct sockaddr_in *)&peer_addr;
-      inet_ntop(AF_INET, &addr_in->sin_addr, buf, peer_addr_len);
+      inet_ntop(AF_INET, &addr_in->sin_addr, buf, 255);
 
       uint32_t val = addr_in->sin_addr.s_addr;
       printf("\nlength\t%d\nnumeric\t%d\nformat\t%s\n", peer_addr_len,
@@ -100,7 +100,7 @@ int run(char *name, char *port, int version) {
 
     if (version == 2) {
       struct sockaddr_in6 *addr_in = (struct sockaddr_in6 *)&peer_addr;
-      inet_ntop(AF_INET6, &addr_in->sin6_addr, buf, peer_addr_len);
+      inet_ntop(AF_INET6, &addr_in->sin6_addr, buf, 255);
 
       uint32_t *val = addr_in->sin6_addr.s6_addr32;
       printf("\nlength\t%d\nnumeric\t%d %d %d %d\nformat\t%s\n", peer_addr_len,
