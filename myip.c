@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,14 +89,22 @@ int run(char *name, char *port, int version) {
       return 1;
     }
 
-    if(version == 1) {
+    if (version == 1) {
       struct sockaddr_in *addr_in = (struct sockaddr_in *)&peer_addr;
       inet_ntop(AF_INET, &addr_in->sin_addr, buf, peer_addr_len);
+
+      uint32_t val = addr_in->sin_addr.s_addr;
+      printf("\nlength\t%d\nnumeric\t%d\nformat\t%s\n", peer_addr_len,
+             ntohl(val), buf);
     }
 
-    if(version == 2) {
+    if (version == 2) {
       struct sockaddr_in6 *addr_in = (struct sockaddr_in6 *)&peer_addr;
       inet_ntop(AF_INET6, &addr_in->sin6_addr, buf, peer_addr_len);
+
+      uint32_t *val = addr_in->sin6_addr.s6_addr32;
+      printf("\nlength\t%d\nnumeric\t%d %d %d %d\nformat\t%s\n", peer_addr_len,
+             ntohl(val[0]), ntohl(val[1]), ntohl(val[2]), ntohl(val[3]), buf);
     }
 
     unsigned long len = strlen(buf);
@@ -111,6 +120,9 @@ int run(char *name, char *port, int version) {
 
 int main(int argc, char **argv) {
   signal(SIGINT, sigint_handler);
+
+  // for systemd
+  setlinebuf(stdout);
 
   switch (argc) {
   case 2:
